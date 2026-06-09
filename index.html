@@ -2,533 +2,509 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>カレンダー</title>
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMM 検索</title>
 
 <style>
-  * { box-sizing: border-box; }
+  h1 {
+  text-align: center;
+}
+
   body {
-    font-family: system-ui, sans-serif;
     margin: 0;
-    padding: 0;
-    background: #f5f5f5;
-  }
+    font-family: sans-serif;
+    overflow-y: auto;
+}
 
-  /* スマホ幅にフィット */
-  .calendar-wrapper {
-    max-width: 390px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 10px;
-    background: #fff;
-    min-height: 100vh;
-  }
+#mainText {
+  position: relative;
+  z-index: 1;
+}
+  
+  /* ハンバーガーアイコン */
+.hamburger {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 1000;
+  user-select: none;
+}
 
-  .cal-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
+/* サイドメニュー */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -250px; /* 初期は隠す */
+  width: 250px;
+  height: 100%;
+  background: #333;
+  color: #fff;
+  padding-top: 60px;
+  transition: left 0.3s ease;
+  z-index: 999;
+}
 
-  .cal-title {
-    font-weight: bold;
-    font-size: 18px;
-  }
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
 
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    align-content: start;
-    width: 100%;
-  }
+.side-menu li {
+  padding: 15px 20px;
+  border-bottom: 1px solid #444;
+}
 
-  .dow {
-    text-align: center;
-    padding: 4px 0;
-    background: #eee;
-    font-size: 12px;
-    font-weight: bold;
-  }
+.side-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 18px;
+}
 
-  .day-cell {
-    min-height: 52px;
-    background: #fafafa;
-    border-radius: 4px;
-    padding: 2px;
-    font-size: 11px;
+.side-menu a:hover {
+  color: #ffd700;
+}
+
+/* メニュー展開時 */
+.side-menu.open {
+  left: 0;
+}
+
+  .container {
+    margin: 40px auto;
+    width: 90%;
+    max-width: 500px;
     position: relative;
   }
 
-  .today {
-    outline: 2px solid #ff4d4d;
-    background: #ffecec;
+  textarea {
+    width: 100%;
+    height: 33px;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 8px;
+    resize: none;
   }
 
-  .event {
-    margin-top: 2px;
-    padding: 1px 2px;
-    border-radius: 3px;
-    color: #fff;
-    font-size: 10px;
-    cursor: pointer;
-  }
-
-  /* モーダル（カレンダーの上に重ねる） */
-  .modal-bg {
-    position: fixed;
-    top: 0;
+  .suggest-box {
+    position: absolute;
+    top: 100%;
     left: 0;
     width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-
-  .modal {
     background: #fff;
-    padding: 15px;
-    width: 90%;
-    max-width: 360px;
-    border-radius: 8px;
-    z-index: 10000;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 10;
   }
 
-  .modal input, .modal select {
-    width: 100%;
-    padding: 6px;
-    margin-bottom: 8px;
-  }
-
-  .digit-boxes {
-    margin: 8px 0;
-  }
-  .digit-boxes label {
-    margin-right: 6px;
-    font-size: 14px;
-  }
-
-  .color-buttons button {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: none;
-    margin-right: 6px;
-  }
-
-  .btn-row {
+  .suggest-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
   }
 
-  .btn-row button {
-    padding: 6px 10px;
-    font-size: 14px;
+  .suggest-item:hover {
+    background: #e6f2ff;
+  }
+
+  .suggest-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
   }
 </style>
+
 </head>
-
 <body>
+  <h1>DMM 検索</h1>
 
-<div class="calendar-wrapper" id="swipeArea">
-  <div class="cal-header">
-    <button id="prevMonth">&lt;</button>
-    <div class="cal-title" id="calTitle"></div>
-    <button id="nextMonth">&gt;</button>
-  </div>
+<div class="hamburger" id="hamburger">☰</div>
 
-  <div class="calendar-grid" id="calendar"></div>
-</div>
+<nav class="side-menu" id="sideMenu">
+  <ul>
+    <li><a href="file:///C:/Users/C25034/Desktop/slot/index.html">DMM 検索</a></li>
+    <li><a href="https://p-town.dmm.com/machines/slot?page=2">DMM パチスロ一覧</a></li>
+    <li><a href="https://daidata.goraggio.com/">台データオンライン</a></li>
+    <li><a href="file:///C:/Users/C25034/Desktop/slot/roulette.html">ジャグラールーレット</a></li>
+  </ul>
+</nav>
 
-<!-- 予定追加・編集モーダル -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <h3 id="modalTitle">予定を追加</h3>
-
-    <input type="text" id="modalEventTitle" placeholder="予定タイトル">
-
-    <select id="modalRepeat">
-      <option value="none">繰り返しなし</option>
-      <option value="weekly">毎週</option>
-      <option value="monthly">毎月</option>
-      <option value="yearly">毎年</option>
-    </select>
-
-    <div class="digit-boxes" id="digitBoxes">
-      <div>数字が付く日（複数選択可）</div>
-      <label><input type="checkbox" value="0">0</label>
-      <label><input type="checkbox" value="1">1</label>
-      <label><input type="checkbox" value="2">2</label>
-      <label><input type="checkbox" value="3">3</label>
-      <label><input type="checkbox" value="4">4</label>
-      <label><input type="checkbox" value="5">5</label>
-      <label><input type="checkbox" value="6">6</label>
-      <label><input type="checkbox" value="7">7</label>
-      <label><input type="checkbox" value="8">8</label>
-      <label><input type="checkbox" value="9">9</label>
-    </div>
-
-    <div class="color-buttons" id="modalColors">
-      <button data-color="#007bff" style="background:#007bff"></button>
-      <button data-color="#28a745" style="background:#28a745"></button>
-      <button data-color="#ffc107" style="background:#ffc107"></button>
-      <button data-color="#dc3545" style="background:#dc3545"></button>
-      <button data-color="#6f42c1" style="background:#6f42c1"></button>
-    </div>
-
-    <div class="btn-row">
-      <button id="modalSave">保存</button>
-      <button id="modalDelete" style="background:#dc3545;color:#fff;display:none;">削除</button>
-      <button id="modalClose">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<!-- 予定一覧モーダル -->
-<div class="modal-bg" id="listModalBg">
-  <div class="modal">
-    <h3 id="listModalTitle">予定一覧</h3>
-    <div id="listContent"></div>
-    <button id="listClose">閉じる</button>
-  </div>
+<!-- ▼ メインUI -->
+<div class="container">
+  <textarea id="mainText" placeholder="入力…"></textarea>
+  <div id="suggestBox" class="suggest-box"></div>
 </div>
 
 <script>
-/* -------------------------
-   基本変数
-------------------------- */
-let events = [];
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
-let selectedDate = null;
-let editingId = null;
-let modalColor = "#007bff";
+const hamburger = document.getElementById("hamburger");
+const sideMenu = document.getElementById("sideMenu");
+const textarea = document.getElementById("mainText");
+const suggestBox = document.getElementById("suggestBox");
 
-/* -------------------------
-   保存・読み込み
-------------------------- */
-function saveEvents() {
-  localStorage.setItem("calendarEvents", JSON.stringify(events));
-}
-function loadEvents() {
-  const data = localStorage.getItem("calendarEvents");
-  if (data) events = JSON.parse(data);
-}
-loadEvents();
+// ▼ ハンバーガー開閉
+hamburger.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← メニュー外クリックに奪われないようにする
+  sideMenu.classList.toggle("open");
+});
 
-/* -------------------------
-   カレンダー描画
-------------------------- */
-const calendarEl = document.getElementById("calendar");
-const calTitleEl = document.getElementById("calTitle");
+// ▼ textarea を押したら閉じる
+textarea.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← これが無いと textarea のクリックが無効化される
+  sideMenu.classList.remove("open");
+});
 
-function renderCalendar() {
-  calendarEl.innerHTML = "";
+// ▼ メニュー内を押したときは閉じない
+sideMenu.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← メニュー内クリックは閉じない
+});
 
-  const dow = ["日","月","火","水","木","金","土"];
-  dow.forEach(d => {
-    const h = document.createElement("div");
-    h.className = "dow";
-    h.textContent = d;
-    calendarEl.appendChild(h);
+// ▼ メニュー外クリックで閉じる
+document.addEventListener("click", () => {
+  sideMenu.classList.remove("open");
+});
+
+// ▼ ローマ字 → ひらがな変換
+function romajiToHiragana(str) {
+  const table = {
+    kya:"きゃ", kyu:"きゅ", kyo:"きょ",
+    sha:"しゃ", shu:"しゅ", sho:"しょ",
+    cha:"ちゃ", chu:"ちゅ", cho:"ちょ", tya:"ちゃ", tyu:"ちゅ", tyo:"ちょ",
+    nya:"にゃ", nyu:"にゅ", nyo:"にょ",
+    hya:"ひゃ", hyu:"ひゅ", hyo:"ひょ",
+    mya:"みゃ", myu:"みゅ", myo:"みょ",
+    rya:"りゃ", ryu:"りゅ", ryo:"りょ",
+    gya:"ぎゃ", gyu:"ぎゅ", gyo:"ぎょ",
+    ja:"じゃ", ju:"じゅ", jo:"じょ", zya:"じゃ", zyu:"じゅ", zyo:"じょ",
+    bya:"びゃ", byu:"びゅ", byo:"びょ",
+    pya:"ぴゃ", pyu:"ぴゅ", pyo:"ぴょ",
+
+    // 促音
+    kka:"っか", kki:"っき", kku:"っく", kke:"っけ", kko:"っこ",
+    ssa:"っさ", ssi:"っし", ssu:"っす", sse:"っせ", sso:"っそ",
+    tta:"った", tti:"っち", ttu:"っつ", tte:"って", tto:"っと", cchi:"っち",
+
+    //濁音
+    ga: "が", gi: "ぎ", gu: "ぐ", ge: "げ", go: "ご",
+    za: "ざ", ji: "じ", zu: "ず", ze: "ぜ", zo: "ぞ",
+    da: "だ", di: "ぢ", du: "づ", de: "で", do: "ど",
+    ba: "ば", bi: "び", bu: "ぶ", be: "べ", bo: "ぼ",
+
+    //半濁音
+    pa: "ぱ", pi: "ぴ", pu: "ぷ", pe: "ぺ", po: "ぽ",
+
+    // 五十音
+    ka:"か", ki:"き", ku:"く", ke:"け", ko:"こ",
+    sa:"さ", si:"し", su:"す", se:"せ", so:"そ",
+    ta:"た", ti:"ち", tu:"つ", te:"て", to:"と",
+    na:"な", ni:"に", nu:"ぬ", ne:"ね", no:"の",
+    ha:"は", hi:"ひ", hu:"ふ", he:"へ", ho:"ほ",
+    ma:"ま", mi:"み", mu:"む", me:"め", mo:"も",
+    ya:"や", yu:"ゆ", yo:"よ",
+    ra:"ら", ri:"り", ru:"る", re:"れ", ro:"ろ",
+    wa:"わ", wo:"を", nn:"ん", n:"ん",
+    a:"あ", i:"い", u:"う", e:"え", o:"お",
+
+    k:"か", k:"き", k:"く", k:"け", k:"こ",
+    s:"さ", s:"し", s:"す", s:"せ", s:"そ",
+    t:"た", t:"ち", t:"つ", t:"て", t:"と",
+    n:"な", n:"に", n:"ぬ", n:"ね", n:"の",
+    h:"は", h:"ひ", h:"ふ", h:"へ", h:"ほ",
+    m:"ま", m:"み", m:"む", m:"め", m:"も",
+    y:"や", y:"ゆ", y:"よ",
+    r:"ら", r:"り", r:"る", r:"れ", r:"ろ",
+  };
+
+  let result = str.toLowerCase();
+  const keys = Object.keys(table).sort((a, b) => b.length - a.length);
+  keys.forEach(key => {
+    result = result.replace(new RegExp(key, "g"), table[key]);
   });
-
-  const first = new Date(currentYear, currentMonth, 1);
-  const startDow = first.getDay();
-  const days = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-  calTitleEl.textContent = `${currentYear}年 ${currentMonth+1}月`;
-
-  for (let i=0;i<startDow;i++){
-    const empty = document.createElement("div");
-    empty.className = "day-cell";
-    calendarEl.appendChild(empty);
-  }
-
-  for (let d=1; d<=days; d++){
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-
-    const dateObj = new Date(currentYear, currentMonth, d);
-    const dateStr = toStr(dateObj);
-
-    if (isSame(dateObj, new Date())) cell.classList.add("today");
-
-    const num = document.createElement("div");
-    num.textContent = d;
-    num.style.fontWeight = "bold";
-    cell.appendChild(num);
-
-    getEvents(dateObj).forEach(ev => {
-      const evEl = document.createElement("div");
-      evEl.className = "event";
-      evEl.style.background = ev.color;
-      evEl.textContent = ev.title;
-      evEl.dataset.id = ev.id;
-
-      evEl.addEventListener("click", e => {
-        e.stopPropagation();
-        openEdit(ev.id);
-      });
-
-      cell.appendChild(evEl);
-    });
-
-    let tapTimer = null;
-
-    cell.addEventListener("click", () => {
-      if (tapTimer == null) {
-        tapTimer = setTimeout(() => {
-          tapTimer = null;
-          openList(dateStr);
-        }, 250);
-      } else {
-        clearTimeout(tapTimer);
-        tapTimer = null;
-        openAdd(dateStr);
-      }
-    });
-
-    calendarEl.appendChild(cell);
-  }
+  return result;
 }
 
-/* -------------------------
-   日付文字列
-------------------------- */
-function toStr(d){
-  const y=d.getFullYear();
-  const m=("0"+(d.getMonth()+1)).slice(-2);
-  const da=("0"+d.getDate()).slice(-2);
-  return `${y}-${m}-${da}`;
-}
-function isSame(a,b){
-  return a.getFullYear()==b.getFullYear() &&
-         a.getMonth()==b.getMonth() &&
-         a.getDate()==b.getDate();
-}
+// ▼ normalize（全部ひらがなに統一）
+function normalize(str) {
+  // 半角カナ → 全角
+  str = str.replace(/[\uFF65-\uFF9F]/g, s =>
+    String.fromCharCode(s.charCodeAt(0) - 0xFEC0)
+  );
 
-/* -------------------------
-   予定取得（繰り返し対応 + 数字が付く日）
-------------------------- */
-function getEvents(dateObj){
-  const res=[];
-  const ds=toStr(dateObj);
-  const dow=dateObj.getDay();
-  const day=dateObj.getDate();
-  const mon=dateObj.getMonth()+1;
+  // カタカナ → ひらがな
+  str = str.replace(/[\u30A1-\u30F6]/g, s =>
+    String.fromCharCode(s.charCodeAt(0) - 0x60)
+  );
 
-  events.forEach(ev=>{
-    const base=new Date(ev.baseDate);
+  // ローマ字 → ひらがな
+  str = romajiToHiragana(str);
 
-    if(ev.repeat==="none" && ev.baseDate===ds) res.push(ev);
-    if(ev.repeat==="weekly" && dateObj>=base && base.getDay()===dow) res.push(ev);
-    if(ev.repeat==="monthly" && dateObj>=base && base.getDate()===day) res.push(ev);
-    if(ev.repeat==="yearly" && dateObj>=base &&
-       base.getMonth()+1===mon && base.getDate()===day) res.push(ev);
-
-    if (ev.digits && ev.digits.length > 0) {
-      const dayStr = String(day);
-      if (ev.digits.some(d => dayStr.includes(d))) {
-        if (dateObj >= base) res.push(ev);
-      }
-    }
-  });
-
-  return res;
+  return str;
 }
 
-/* -------------------------
-   モーダル制御
-------------------------- */
-const modalBg = document.getElementById("modalBg");
-const modalTitle = document.getElementById("modalTitle");
-const modalEventTitle = document.getElementById("modalEventTitle");
-const modalRepeat = document.getElementById("modalRepeat");
-const modalDelete = document.getElementById("modalDelete");
+// ▼ 辞書（全部 keys に統一）
+const DICT = [
+  {//Lパチスロ炎炎ノ消防隊
+    keys: ["炎炎","消防隊","えんえん","しょうぼうたい"],
+    label: "Lパチスロ炎炎ノ消防隊",
+    img: "img/enen1.png",
+    url: "https://p-town.dmm.com/machines/4555"
+  },
 
-document.getElementById("modalClose").onclick = () => {
-  modalBg.style.display = "none";
-};
+  {//Lパチスロ炎炎ノ消防隊2
+    keys: ["炎炎","消防隊2","えんえん","しょうぼうたい2"],
+    label: "Lパチスロ炎炎ノ消防隊2",
+    img: "img/enen2.png",
+    url: "https://p-town.dmm.com/machines/4926"
+  },
 
-/* 色選択 */
-document.getElementById("modalColors").onclick = e => {
-  if (e.target.tagName === "BUTTON") {
-    modalColor = e.target.dataset.color;
-  }
-};
+  {//スマスロスーパーブラックジャック
+    keys: ["sbj","すーぱー","ぶらっく","じゃっく"],
+    label: "スマスロスーパーブラックジャック",
+    img: "img/sbj.png",
+    url: "https://p-town.dmm.com/machines/4712"
+  },
 
-/* 数字チェック取得 */
-function getSelectedDigits() {
-  const boxes = document.querySelectorAll("#digitBoxes input");
-  return [...boxes].filter(b => b.checked).map(b => b.value);
-}
+  {//スマスロスーパーリオエース2
+    keys: ["sbj","すーぱー","ぶらっく","じゃっく","2"],
+    label: "スマスロスーパーリオエース2",
+    img: "img/sbj2.png",
+    url: "https://p-town.dmm.com/machines/4984"
+  },
 
-/* 数字チェック反映 */
-function setSelectedDigits(arr) {
-  const boxes = document.querySelectorAll("#digitBoxes input");
-  boxes.forEach(b => b.checked = arr.includes(b.value));
-}
+  {//Ｌタクトオーパス デスティニー
+    keys: ["タクトオーパスデスティニー","タクトオーパス","タクト","オーパス","デスティニー"],
+    label: "Ｌタクトオーパス デスティニー",
+    img: "img/takt.png",
+    url: "https://p-town.dmm.com/machines/5000"
+  },
 
-/* -------------------------
-   予定追加モード
-------------------------- */
-function openAdd(dateStr){
-  selectedDate = dateStr;
-  editingId = null;
+  {//スマスロヨルムンガンド
+    keys: ["ヨルムンガンド"],
+    label: "スマスロヨルムンガンド",
+    img: "img/yoru.png",
+    url: "https://p-town.dmm.com/machines/4970"
+  },
 
-  modalTitle.textContent = "予定を追加";
-  modalEventTitle.value = "";
-  modalRepeat.value = "none";
-  modalColor = "#007bff";
-  modalDelete.style.display = "none";
-  setSelectedDigits([]);
+  {//L ダーリン・イン・ザ・フランキス
+    keys: ["だーりん","いんざ", "きす"],
+    label: "L ダーリン・イン・ザ・フランキス",
+    img: "img/darifura.png",
+    url: "https://p-town.dmm.com/machines/4855"
+  },
 
-  modalBg.style.display = "flex";
-}
+  {//アニマルスロット ドッチ
+    keys: ["あにまる","どっち","すろっと","あにまるどっち"],
+    label: "アニマルスロット ドッチ",
+    img: "img/animal.png",
+    url: "https://p-town.dmm.com/machines/4964"
+  },
 
-/* -------------------------
-   予定編集モード
-------------------------- */
-function openEdit(id){
-  editingId = id;
-  const ev = events.find(e => e.id === id);
+  {//パチスロ 甲鉄城のカバネリ
+    keys: ["こうてつじょう","甲鉄城","甲鉄城のカバネリ","こうてつじょうのカバネリ","カバネリ"],
+    label: "パチスロ甲鉄城のカバネリ",
+    img: "img/kabaneri.png",
+    url: "https://p-town.dmm.com/machines/4160"
+  },
 
-  modalTitle.textContent = "予定を編集";
-  modalEventTitle.value = ev.title;
-  modalRepeat.value = ev.repeat;
-  modalColor = ev.color;
-  modalDelete.style.display = "inline-block";
-  setSelectedDigits(ev.digits || []);
+  {//スマスロ 甲鉄城のカバネリ 海門決戦
+    keys: ["こうてつじょう","甲鉄城","甲鉄城のカバネリ","こうてつじょうのカバネリ","カバネリ","海門","うなと","決戦","けっせん"],
+    label: "スマスロ 甲鉄城のカバネリ 海門決戦",
+    img: "img/unato.png",
+    url: "https://p-town.dmm.com/machines/4930"
+  },
 
-  modalBg.style.display = "flex";
-}
+  {//L虚構推理
+    keys: ["きょこう","すいり","虚構","推理"],
+    label: "L虚構推理",
+    img: "img/kyokou.png",
+    url: "https://p-town.dmm.com/machines/4973"
+  },
 
-/* -------------------------
-   保存ボタン
-------------------------- */
-document.getElementById("modalSave").onclick = () => {
-  const title = modalEventTitle.value.trim();
-  if (!title) return;
+  {//スマスロ ビッグドリーム THE GOLDEN PUSHER
+    keys: ["ビッグ","big","ドリーム","dream","ビッグドリーム","bigdream","THE","GOLDEN","PUSHER","THE GOLDEN PUSHER","THEGOLDENPUSHER"],
+    label: "スマスロ ビッグドリーム THE GOLDEN PUSHER",
+    img: "img/big.png",
+    url: "https://p-town.dmm.com/machines/4981"
+  },
 
-  const repeat = modalRepeat.value;
-  const digits = getSelectedDigits();
+  {//スマスロ バイオハザードRE:3
+    keys: ["バイオハザード","バイオ","ハザード","RE","3"],
+    label: "スマスロ バイオハザードRE:3",
+    img: "img/bio3.png",
+    url: "https://p-town.dmm.com/machines/4974"
+  },
 
-  if (editingId === null) {
-    events.push({
-      id: Date.now().toString(),
-      title,
-      color: modalColor,
-      baseDate: selectedDate,
-      repeat,
-      digits
-    });
-  } else {
-    const ev = events.find(e => e.id === editingId);
-    ev.title = title;
-    ev.color = modalColor;
-    ev.repeat = repeat;
-    ev.digits = digits;
-  }
+  {//スマスロ鉄拳6
+    keys: ["鉄拳","てっけん","6"],
+    label: "スマスロ鉄拳6",
+    img: "img/tekken.png",
+    url: "https://p-town.dmm.com/machines/4913"
+  },
 
-  saveEvents();
-  modalBg.style.display = "none";
-  renderCalendar();
-};
+  {//スマスロモンキーターンV
+    keys: ["monnki","monkey", "モンキーターン"],
+    label: "スマスロモンキーターンV",
+    img: "img/monkey.png",
+    url: "https://p-town.dmm.com/machines/4450"
+  },
 
-/* -------------------------
-   削除ボタン
-------------------------- */
-modalDelete.onclick = () => {
-  events = events.filter(e => e.id !== editingId);
-  saveEvents();
-  modalBg.style.display = "none";
-  renderCalendar();
-};
+  {//スマスロ とある科学の超電磁砲2
+    keys: ["とある","かがく","科学", "超電磁砲2","れーるがん","2"],
+    label: "スマスロ とある科学の超電磁砲2",
+    img: "img/re-rugan.png",
+    url: "https://p-town.dmm.com/machines/4892"
+  },
 
-/* -------------------------
-   予定一覧モーダル
-------------------------- */
-const listModalBg = document.getElementById("listModalBg");
-const listContent = document.getElementById("listContent");
-const listModalTitle = document.getElementById("listModalTitle");
+  {//L範馬刃牙
+    keys: ["範馬刃牙","範馬","はんま", "刃牙","ばき"],
+    label: "L範馬刃牙",
+    img: "img/baki.png",
+    url: "https://p-town.dmm.com/machines/4941"
+  },
 
-function openList(dateStr){
-  const dateObj = new Date(dateStr);
-  listModalTitle.textContent = `${dateObj.getMonth()+1}月${dateObj.getDate()}日の予定`;
+  {//Lスマスロ 攻殻機動隊
+    keys: ["攻殻機動隊","こうかくきどうたい","攻殻","こうかく", "機動隊","きどうたい"],
+    label: "スマスロ 攻殻機動隊",
+    img: "img/koukaku.png",
+    url: "https://p-town.dmm.com/machines/4931"
+  },
 
-  const list = getEvents(dateObj);
+  {//スロット ソードアート・オンライン
+    keys: ["swordartonline", "so-doa-toonnrainn", "SAO","ソード","アート", "オンライン"],
+    label: "スロット ソードアート・オンライン",
+    img: "img/sao.png",
+    url: "https://p-town.dmm.com/machines/4352"
+  },
+
+  {//L無職転生～異世界行ったら本気だす～
+    keys: ["無職","転生","むしょく", "てんせい"],
+    label: "L無職転生～異世界行ったら本気だす～",
+    img: "img/mtensei.png",
+    url: "https://p-town.dmm.com/machines/4924"
+  },
+
+  {//L ToLOVEるダークネス
+    keys: ["トラブル","ダークネス", "toloveru", "toraburu"],
+    label: "L ToLOVEるダークネス",
+    img: "img/ToLOVEru.png",
+    url: "https://p-town.dmm.com/machines/4571"
+  },
+
+  {//L ToLOVEるダークネス TRANCE ver.8.7
+    keys: ["トラブル","ダークネス","トランスバージョン", "toloveru", "toraburu"],
+    label: "L ToLOVEるダークネス TRANCE ver.8.7",
+    img: "img/toloverutrance.png",
+    url: "https://p-town.dmm.com/machines/4806"
+  },
+
+  {//パチスロ かぐや様は告らせたい
+    keys: ["かぐやさま","こくらせたい","告らせたい","kaguyasama","kokurasetai"],
+    label: "パチスロ かぐや様は告らせたい",
+    img: "img/kaguya.png",
+    url: "https://p-town.dmm.com/machines/4618"
+  },
+
+  {//スマスロ 沖ドキ！DUOアンコール
+    keys: ["沖ドキDUOアンコール","沖ドキ","おきどき","Duo","デュオ", "アンコール"],
+    label: "スマスロ 沖ドキ！DUOアンコール",
+    img: "img/duoen.png",
+    url: "https://p-town.dmm.com/machines/4906"
+  },
+
+  {//ネオアイムジャグラーEX
+    keys: ["ねおあいむ","じゃぐらー","ex", "imjagura-ex", "imzyagura-ex", "aimuzyagura-ex"],
+    label: "ネオアイムジャグラーEX",
+    img: "img/neoim.png",
+    url: "https://p-town.dmm.com/machines/4801"
+  },
+
+  {//ウルトラミラクルジャグラー
+    keys: ["うるとら","じゃぐらー","みらくる"],
+    label: "ウルトラミラクルジャグラー",
+    img: "img/urutora.png",
+    url: "https://p-town.dmm.com/machines/4683"
+  },
+
+  {//マイジャグラーⅤ
+    keys: ["まい","じゃぐらー"],
+    label: "マイジャグラーⅤ",
+    img: "img/my.png",
+    url: "https://p-town.dmm.com/machines/4571"
+  },
+  
+  {//ミスタージャグラー
+    keys: ["みすたー","じゃぐらー"],
+    label: "ミスタージャグラー",
+    img: "img/mister.png",
+    url: "https://p-town.dmm.com/machines/4588"
+  },
+
+  {//ファンキージャグラー2
+    keys: ["ふぁんきー","じゃぐらー","fanki-","funky"],
+    label: "ファンキージャグラー2",
+    img: "img/funky.png",
+    url: "https://p-town.dmm.com/machines/3961"
+  },
+];
+
+// ▼ 複数 key 対応の検索
+function showSuggestions(token) {
+  const list = DICT.filter(item =>
+    item.keys.some(k => normalize(k).startsWith(token))
+  );
 
   if (list.length === 0) {
-    listContent.innerHTML = "<p>予定はありません</p>";
-  } else {
-    listContent.innerHTML = list.map(ev => `
-      <div style="margin:6px 0;padding:6px;background:#f0f0f0;border-radius:4px;">
-        <b style="color:${ev.color}">${ev.title}</b><br>
-        <button onclick="openEdit('${ev.id}')">編集</button>
-        <button onclick="deleteFromList('${ev.id}')">削除</button>
-      </div>
-    `).join("");
+    suggestBox.style.display = "none";
+    suggestBox.innerHTML = "";
+    return;
   }
 
-  listModalBg.style.display = "flex";
+  suggestBox.innerHTML = "";
+
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggest-item";
+
+    const img = document.createElement("img");
+    img.src = item.img;
+
+    const span = document.createElement("span");
+    span.textContent = item.label;
+
+    div.appendChild(img);
+    div.appendChild(span);
+
+    // ★ 候補を押したらリンクに飛ぶ
+    div.addEventListener("click", () => {
+      window.location.href = item.url;
+    });
+
+    suggestBox.appendChild(div);
+  });
+
+  suggestBox.style.display = "block";
 }
 
-function deleteFromList(id){
-  events = events.filter(e => e.id !== id);
-  saveEvents();
-  listModalBg.style.display = "none";
-  renderCalendar();
-}
-
-document.getElementById("listClose").onclick = () => {
-  listModalBg.style.display = "none";
-};
-
-/* -------------------------
-   月移動
-------------------------- */
-document.getElementById("prevMonth").onclick = () => {
-  currentMonth--;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  renderCalendar();
-};
-document.getElementById("nextMonth").onclick = () => {
-  currentMonth++;
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-  renderCalendar();
-};
-
-/* -------------------------
-   スワイプで月切り替え
-------------------------- */
-let startX = 0;
-const swipeArea = document.getElementById("swipeArea");
-
-swipeArea.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-});
-swipeArea.addEventListener("touchend", e => {
-  const diff = e.changedTouches[0].clientX - startX;
-  if (Math.abs(diff) > 50) {
-    if (diff < 0) {
-      currentMonth++;
-      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    } else {
-      currentMonth--;
-      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    }
-    renderCalendar();
+// ▼ 入力イベント
+textarea.addEventListener("input", () => {
+  const raw = textarea.value.trim();
+  if (raw === "") {
+    suggestBox.style.display = "none";
+    return;
   }
-});
 
-/* -------------------------
-   初期描画
-------------------------- */
-renderCalendar();
+  const token = normalize(raw);
+  showSuggestions(token);
+});
 </script>
+
 </body>
 </html>
