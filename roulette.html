@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ジャグラールーレット</title>
+<style>
+
+  h1 {
+  text-align: center;
+  }
+
+  body {
+    font-family: sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .roulette-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: auto;
+  }
+
+  /* 矢印（向きはそのまま、位置は上） */
+  #arrow {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    z-index: 10;
+    display: none;
+  }
+
+  #wheelCanvas {
+    width: 300px;
+    height: 300px;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: center;
+    width: 200px;
+    margin: 6px auto;
+  }
+
+  .item-row input[type="checkbox"] {
+    margin-right: 10px;
+  }
+
+  .item-row label {
+    flex: 1;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>ジャグラールーレット</h1>
+
+<div class="roulette-container">
+  <img id="arrow" src="img/yajirushi_bottom_nl.png">
+  <canvas id="wheelCanvas" width="300" height="300"></canvas>
+</div>
+
+<div id="items">
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="アイムジャグラー">
+    <label>アイムジャグラー</label>
+  </div>
+
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="マイジャグラー">
+    <label>マイジャグラー</label>
+  </div>
+
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="ハッピージャグラー">
+    <label>ハッピージャグラー</label>
+  </div>
+
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="ファンキージャグラー">
+    <label>ファンキージャグラー</label>
+  </div>
+
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="ゴーゴージャグラー">
+    <label>ゴーゴージャグラー</label>
+  </div>
+  
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="ジャグラーガールズ">
+    <label>ジャグラーガールズ</label>
+  </div>
+
+  <div class="item-row">
+    <input type="checkbox" class="item-check" value="ミスタージャグラー">
+    <label>ミスタージャグラー</label>
+  </div>
+
+<button id="spinBtn">回す</button>
+
+<h2 id="result"></h2>
+
+<script>
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
+const arrow = document.getElementById("arrow");
+
+let currentRotation = 0;
+
+// 扇形ルーレットを描く
+function drawWheel(items) {
+  const count = items.length;
+  const angle = (2 * Math.PI) / count;
+
+  ctx.clearRect(0, 0, 300, 300);
+
+  for (let i = 0; i < count; i++) {
+    const start = i * angle;
+    const end = start + angle;
+
+    ctx.fillStyle = `hsl(${(i * 360) / count}, 80%, 60%)`;
+
+    ctx.beginPath();
+    ctx.moveTo(150, 150);
+    ctx.arc(150, 150, 150, start, end);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(150, 150);
+    ctx.rotate(start + angle / 2);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "white";
+    ctx.font = "15px sans-serif";
+    ctx.fillText(items[i], 80, 10);
+    ctx.restore();
+  }
+}
+
+// requestAnimationFrame で安定回転
+function animateRotation(start, end, duration, callback) {
+  const startTime = performance.now();
+
+  function frame(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // 減速イージング
+
+    const angle = start + (end - start) * eased;
+    canvas.style.transform = `rotate(${angle}deg)`;
+
+    if (progress < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      callback();
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+document.getElementById("spinBtn").onclick = () => {
+  const checks = [...document.querySelectorAll(".item-check:checked")];
+  if (checks.length === 0) {
+    document.getElementById("result").textContent = "チェックがありません";
+    return;
+  }
+
+  const items = checks.map(c => c.value);
+
+  drawWheel(items);
+
+  // 矢印を表示
+  arrow.style.display = "block";
+
+  const spinAngle = 360 * 5 + Math.floor(Math.random() * 360);
+  const startAngle = currentRotation;
+  const endAngle = currentRotation + spinAngle;
+
+  animateRotation(startAngle, endAngle, 4000, () => {
+    currentRotation = endAngle % 360;
+
+    const count = items.length;
+    const sliceAngle = 360 / count;
+
+    // ★ 矢印は上向き → Canvas の 270° が当たり
+    const arrowAngle = 270;
+
+    // ★ CSS は時計回り → Canvas は反時計回り → 逆順補正
+    const correctedAngle = (360 - (currentRotation - arrowAngle + 360) % 360) % 360;
+
+    // ★ 個数ごとに角度固定して判定
+    const index = Math.floor(correctedAngle / sliceAngle);
+
+    const chosen = items[index];
+
+    document.getElementById("result").textContent = "結果： " + chosen;
+  });
+};
+</script>
+
+</body>
+</html>

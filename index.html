@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>DMM 検索</title>
+
+<style>
+  h1 {
+  text-align: center;
+}
+
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    overflow-y: auto;
+}
+
+#mainText {
+  position: relative;
+  z-index: 1;
+}
+  
+  /* ハンバーガーアイコン */
+.hamburger {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 1000;
+  user-select: none;
+}
+
+/* サイドメニュー */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -250px; /* 初期は隠す */
+  width: 250px;
+  height: 100%;
+  background: #333;
+  color: #fff;
+  padding-top: 60px;
+  transition: left 0.3s ease;
+  z-index: 999;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-menu li {
+  padding: 15px 20px;
+  border-bottom: 1px solid #444;
+}
+
+.side-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.side-menu a:hover {
+  color: #ffd700;
+}
+
+/* メニュー展開時 */
+.side-menu.open {
+  left: 0;
+}
+
+  .container {
+    margin: 40px auto;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+  }
+
+  textarea {
+    width: 100%;
+    height: 33px;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 8px;
+    resize: none;
+  }
+
+  .suggest-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 10;
+  }
+
+  .suggest-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .suggest-item:hover {
+    background: #e6f2ff;
+  }
+
+  .suggest-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+</style>
+
+</head>
+<body>
+  <h1>DMM 検索</h1>
+
+<div class="hamburger" id="hamburger">☰</div>
+
+<nav class="side-menu" id="sideMenu">
+  <ul>
+    <li><a href="file:///C:/Users/C25034/Desktop/slot/index.html">DMM 検索</a></li>
+    <li><a href="https://p-town.dmm.com/machines/slot?page=2">DMM パチスロ一覧</a></li>
+    <li><a href="https://yahoo.co.jp">Yahoo</a></li>
+    <li><a href="file:///C:/Users/C25034/Desktop/slot/roulette.html">ジャグラールーレット</a></li>
+  </ul>
+</nav>
+
+<!-- ▼ メインUI -->
+<div class="container">
+  <textarea id="mainText" placeholder="入力…"></textarea>
+  <div id="suggestBox" class="suggest-box"></div>
+</div>
+
+<script>
+const hamburger = document.getElementById("hamburger");
+const sideMenu = document.getElementById("sideMenu");
+const textarea = document.getElementById("mainText");
+const suggestBox = document.getElementById("suggestBox");
+
+// ▼ ハンバーガー開閉
+hamburger.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← メニュー外クリックに奪われないようにする
+  sideMenu.classList.toggle("open");
+});
+
+// ▼ textarea を押したら閉じる
+textarea.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← これが無いと textarea のクリックが無効化される
+  sideMenu.classList.remove("open");
+});
+
+// ▼ メニュー内を押したときは閉じない
+sideMenu.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← メニュー内クリックは閉じない
+});
+
+// ▼ メニュー外クリックで閉じる
+document.addEventListener("click", () => {
+  sideMenu.classList.remove("open");
+});
+
+// ▼ ローマ字 → ひらがな変換
+function romajiToHiragana(str) {
+  const table = {
+    kya:"きゃ", kyu:"きゅ", kyo:"きょ",
+    sha:"しゃ", shu:"しゅ", sho:"しょ",
+    cha:"ちゃ", chu:"ちゅ", cho:"ちょ", tya:"ちゃ", tyu:"ちゅ", tyo:"ちょ",
+    nya:"にゃ", nyu:"にゅ", nyo:"にょ",
+    hya:"ひゃ", hyu:"ひゅ", hyo:"ひょ",
+    mya:"みゃ", myu:"みゅ", myo:"みょ",
+    rya:"りゃ", ryu:"りゅ", ryo:"りょ",
+    gya:"ぎゃ", gyu:"ぎゅ", gyo:"ぎょ",
+    ja:"じゃ", ju:"じゅ", jo:"じょ", zya:"じゃ", zyu:"じゅ", zyo:"じょ",
+    bya:"びゃ", byu:"びゅ", byo:"びょ",
+    pya:"ぴゃ", pyu:"ぴゅ", pyo:"ぴょ",
+
+    // 促音
+    kka:"っか", kki:"っき", kku:"っく", kke:"っけ", kko:"っこ",
+    ssa:"っさ", ssi:"っし", ssu:"っす", sse:"っせ", sso:"っそ",
+    tta:"った", tti:"っち", ttu:"っつ", tte:"って", tto:"っと", cchi:"っち",
+
+    //濁音
+    ga: "が", gi: "ぎ", gu: "ぐ", ge: "げ", go: "ご",
+    za: "ざ", ji: "じ", zu: "ず", ze: "ぜ", zo: "ぞ",
+    da: "だ", di: "ぢ", du: "づ", de: "で", do: "ど",
+    ba: "ば", bi: "び", bu: "ぶ", be: "べ", bo: "ぼ",
+
+    //半濁音
+    pa: "ぱ", pi: "ぴ", pu: "ぷ", pe: "ぺ", po: "ぽ",
+
+    // 五十音
+    ka:"か", ki:"き", ku:"く", ke:"け", ko:"こ",
+    sa:"さ", si:"し", su:"す", se:"せ", so:"そ",
+    ta:"た", ti:"ち", tu:"つ", te:"て", to:"と",
+    na:"な", ni:"に", nu:"ぬ", ne:"ね", no:"の",
+    ha:"は", hi:"ひ", hu:"ふ", he:"へ", ho:"ほ",
+    ma:"ま", mi:"み", mu:"む", me:"め", mo:"も",
+    ya:"や", yu:"ゆ", yo:"よ",
+    ra:"ら", ri:"り", ru:"る", re:"れ", ro:"ろ",
+    wa:"わ", wo:"を", nn:"ん", n:"ん",
+    a:"あ", i:"い", u:"う", e:"え", o:"お",
+
+    k:"か", k:"き", k:"く", k:"け", k:"こ",
+    s:"さ", s:"し", s:"す", s:"せ", s:"そ",
+    t:"た", t:"ち", t:"つ", t:"て", t:"と",
+    n:"な", n:"に", n:"ぬ", n:"ね", n:"の",
+    h:"は", h:"ひ", h:"ふ", h:"へ", h:"ほ",
+    m:"ま", m:"み", m:"む", m:"め", m:"も",
+    y:"や", y:"ゆ", y:"よ",
+    r:"ら", r:"り", r:"る", r:"れ", r:"ろ",
+  };
+
+  let result = str.toLowerCase();
+  const keys = Object.keys(table).sort((a, b) => b.length - a.length);
+  keys.forEach(key => {
+    result = result.replace(new RegExp(key, "g"), table[key]);
+  });
+  return result;
+}
+
+// ▼ normalize（全部ひらがなに統一）
+function normalize(str) {
+  // 半角カナ → 全角
+  str = str.replace(/[\uFF65-\uFF9F]/g, s =>
+    String.fromCharCode(s.charCodeAt(0) - 0xFEC0)
+  );
+
+  // カタカナ → ひらがな
+  str = str.replace(/[\u30A1-\u30F6]/g, s =>
+    String.fromCharCode(s.charCodeAt(0) - 0x60)
+  );
+
+  // ローマ字 → ひらがな
+  str = romajiToHiragana(str);
+
+  return str;
+}
+
+// ▼ 辞書（全部 keys に統一）
+const DICT = [
+  {//Lパチスロ炎炎ノ消防隊
+    keys: ["炎炎","消防隊","えんえん","しょうぼうたい"],
+    label: "Lパチスロ炎炎ノ消防隊",
+    img: "img/enen1.png",
+    url: "https://p-town.dmm.com/machines/4555"
+  },
+
+  {//Lパチスロ炎炎ノ消防隊2
+    keys: ["炎炎","消防隊2","えんえん","しょうぼうたい2"],
+    label: "Lパチスロ炎炎ノ消防隊2",
+    img: "img/enen2.png",
+    url: "https://p-town.dmm.com/machines/4926"
+  },
+
+  {//スマスロスーパーブラックジャック
+    keys: ["sbj","すーぱー","ぶらっく","じゃっく"],
+    label: "スマスロスーパーブラックジャック",
+    img: "img/sbj.png",
+    url: "https://p-town.dmm.com/machines/4712"
+  },
+
+  {//スマスロスーパーリオエース2
+    keys: ["sbj","すーぱー","ぶらっく","じゃっく","2"],
+    label: "スマスロスーパーリオエース2",
+    img: "img/sbj2.png",
+    url: "https://p-town.dmm.com/machines/4984"
+  },
+
+  {//Ｌタクトオーパス デスティニー
+    keys: ["タクトオーパスデスティニー","タクトオーパス","タクト","オーパス","デスティニー"],
+    label: "Ｌタクトオーパス デスティニー",
+    img: "img/takt.png",
+    url: "https://p-town.dmm.com/machines/5000"
+  },
+
+  {//スマスロヨルムンガンド
+    keys: ["ヨルムンガンド"],
+    label: "スマスロヨルムンガンド",
+    img: "img/yoru.png",
+    url: "https://p-town.dmm.com/machines/4970"
+  },
+
+  {//L ダーリン・イン・ザ・フランキス
+    keys: ["だーりん","いんざ", "きす"],
+    label: "L ダーリン・イン・ザ・フランキス",
+    img: "img/darifura.png",
+    url: "https://p-town.dmm.com/machines/4855"
+  },
+
+  {//アニマルスロット ドッチ
+    keys: ["あにまる","どっち","すろっと","あにまるどっち"],
+    label: "アニマルスロット ドッチ",
+    img: "img/animal.png",
+    url: "https://p-town.dmm.com/machines/4964"
+  },
+
+  {//パチスロ 甲鉄城のカバネリ
+    keys: ["こうてつじょう","甲鉄城","甲鉄城のカバネリ","こうてつじょうのカバネリ","カバネリ"],
+    label: "パチスロ甲鉄城のカバネリ",
+    img: "img/kabaneri.png",
+    url: "https://p-town.dmm.com/machines/4160"
+  },
+
+  {//スマスロ 甲鉄城のカバネリ 海門決戦
+    keys: ["こうてつじょう","甲鉄城","甲鉄城のカバネリ","こうてつじょうのカバネリ","カバネリ","海門","うなと","決戦","けっせん"],
+    label: "スマスロ 甲鉄城のカバネリ 海門決戦",
+    img: "img/unato.png",
+    url: "https://p-town.dmm.com/machines/4930"
+  },
+
+  {//L虚構推理
+    keys: ["きょこう","すいり","虚構","推理"],
+    label: "L虚構推理",
+    img: "img/kyokou.png",
+    url: "https://p-town.dmm.com/machines/4973"
+  },
+
+  {//スマスロ ビッグドリーム THE GOLDEN PUSHER
+    keys: ["ビッグ","big","ドリーム","dream","ビッグドリーム","bigdream","THE","GOLDEN","PUSHER","THE GOLDEN PUSHER","THEGOLDENPUSHER"],
+    label: "スマスロ ビッグドリーム THE GOLDEN PUSHER",
+    img: "img/big.png",
+    url: "https://p-town.dmm.com/machines/4981"
+  },
+
+  {//スマスロ バイオハザードRE:3
+    keys: ["バイオハザード","バイオ","ハザード","RE","3"],
+    label: "スマスロ バイオハザードRE:3",
+    img: "img/bio3.png",
+    url: "https://p-town.dmm.com/machines/4974"
+  },
+
+  {//スマスロ鉄拳6
+    keys: ["鉄拳","てっけん","6"],
+    label: "スマスロ鉄拳6",
+    img: "img/tekken.png",
+    url: "https://p-town.dmm.com/machines/4913"
+  },
+
+  {//スマスロモンキーターンV
+    keys: ["monnki","monkey", "モンキーターン"],
+    label: "スマスロモンキーターンV",
+    img: "img/monkey.png",
+    url: "https://p-town.dmm.com/machines/4450"
+  },
+
+  {//スマスロ とある科学の超電磁砲2
+    keys: ["とある","かがく","科学", "超電磁砲2","れーるがん","2"],
+    label: "スマスロ とある科学の超電磁砲2",
+    img: "img/re-rugan.png",
+    url: "https://p-town.dmm.com/machines/4892"
+  },
+
+  {//L範馬刃牙
+    keys: ["範馬刃牙","範馬","はんま", "刃牙","ばき"],
+    label: "L範馬刃牙",
+    img: "img/baki.png",
+    url: "https://p-town.dmm.com/machines/4941"
+  },
+
+  {//Lスマスロ 攻殻機動隊
+    keys: ["攻殻機動隊","こうかくきどうたい","攻殻","こうかく", "機動隊","きどうたい"],
+    label: "スマスロ 攻殻機動隊",
+    img: "img/koukaku.png",
+    url: "https://p-town.dmm.com/machines/4931"
+  },
+
+  {//スロット ソードアート・オンライン
+    keys: ["swordartonline", "so-doa-toonnrainn", "SAO","ソード","アート", "オンライン"],
+    label: "スロット ソードアート・オンライン",
+    img: "img/sao.png",
+    url: "https://p-town.dmm.com/machines/4352"
+  },
+
+  {//L無職転生～異世界行ったら本気だす～
+    keys: ["無職","転生","むしょく", "てんせい"],
+    label: "L無職転生～異世界行ったら本気だす～",
+    img: "img/mtensei.png",
+    url: "https://p-town.dmm.com/machines/4924"
+  },
+
+  {//L ToLOVEるダークネス
+    keys: ["トラブル","ダークネス", "toloveru", "toraburu"],
+    label: "L ToLOVEるダークネス",
+    img: "img/ToLOVEru.png",
+    url: "https://p-town.dmm.com/machines/4571"
+  },
+
+  {//L ToLOVEるダークネス TRANCE ver.8.7
+    keys: ["トラブル","ダークネス","トランスバージョン", "toloveru", "toraburu"],
+    label: "L ToLOVEるダークネス TRANCE ver.8.7",
+    img: "img/toloverutrance.png",
+    url: "https://p-town.dmm.com/machines/4806"
+  },
+
+  {//パチスロ かぐや様は告らせたい
+    keys: ["かぐやさま","こくらせたい","告らせたい","kaguyasama","kokurasetai"],
+    label: "パチスロ かぐや様は告らせたい",
+    img: "img/kaguya.png",
+    url: "https://p-town.dmm.com/machines/4618"
+  },
+
+  {//スマスロ 沖ドキ！DUOアンコール
+    keys: ["沖ドキDUOアンコール","沖ドキ","おきどき","Duo","デュオ", "アンコール"],
+    label: "スマスロ 沖ドキ！DUOアンコール",
+    img: "img/duoen.png",
+    url: "https://p-town.dmm.com/machines/4906"
+  },
+
+  {//ネオアイムジャグラーEX
+    keys: ["ねおあいむ","じゃぐらー","ex", "imjagura-ex", "imzyagura-ex", "aimuzyagura-ex"],
+    label: "ネオアイムジャグラーEX",
+    img: "img/neoim.png",
+    url: "https://p-town.dmm.com/machines/4801"
+  },
+
+  {//ウルトラミラクルジャグラー
+    keys: ["うるとら","じゃぐらー","みらくる"],
+    label: "ウルトラミラクルジャグラー",
+    img: "img/urutora.png",
+    url: "https://p-town.dmm.com/machines/4683"
+  },
+
+  {//マイジャグラーⅤ
+    keys: ["まい","じゃぐらー"],
+    label: "マイジャグラーⅤ",
+    img: "img/my.png",
+    url: "https://p-town.dmm.com/machines/4571"
+  },
+  
+  {//ミスタージャグラー
+    keys: ["みすたー","じゃぐらー"],
+    label: "ミスタージャグラー",
+    img: "img/mister.png",
+    url: "https://p-town.dmm.com/machines/4588"
+  },
+
+  {//ファンキージャグラー2
+    keys: ["ふぁんきー","じゃぐらー","fanki-","funky"],
+    label: "ファンキージャグラー2",
+    img: "img/funky.png",
+    url: "https://p-town.dmm.com/machines/3961"
+  },
+];
+
+// ▼ 複数 key 対応の検索
+function showSuggestions(token) {
+  const list = DICT.filter(item =>
+    item.keys.some(k => normalize(k).startsWith(token))
+  );
+
+  if (list.length === 0) {
+    suggestBox.style.display = "none";
+    suggestBox.innerHTML = "";
+    return;
+  }
+
+  suggestBox.innerHTML = "";
+
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggest-item";
+
+    const img = document.createElement("img");
+    img.src = item.img;
+
+    const span = document.createElement("span");
+    span.textContent = item.label;
+
+    div.appendChild(img);
+    div.appendChild(span);
+
+    // ★ 候補を押したらリンクに飛ぶ
+    div.addEventListener("click", () => {
+      window.location.href = item.url;
+    });
+
+    suggestBox.appendChild(div);
+  });
+
+  suggestBox.style.display = "block";
+}
+
+// ▼ 入力イベント
+textarea.addEventListener("input", () => {
+  const raw = textarea.value.trim();
+  if (raw === "") {
+    suggestBox.style.display = "none";
+    return;
+  }
+
+  const token = normalize(raw);
+  showSuggestions(token);
+});
+</script>
+
+</body>
+</html>
